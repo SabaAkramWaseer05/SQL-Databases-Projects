@@ -1,0 +1,121 @@
+-- Step 1: Create Database
+CREATE DATABASE LibraryManagementSystem;
+USE LibraryManagementSystem;
+
+-- Step 2: Create Tables
+
+-- 1. Books Table
+CREATE TABLE Books (
+    BookID INT PRIMARY KEY AUTO_INCREMENT,
+    Title VARCHAR(255) NOT NULL,
+    Genre VARCHAR(100),
+    PublishedYear YEAR,
+    ISBN VARCHAR(20) UNIQUE NOT NULL,
+    Quantity INT DEFAULT 1
+);
+
+-- 2. Authors Table
+CREATE TABLE Authors (
+    AuthorID INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(100),
+    LastName VARCHAR(100),
+    Country VARCHAR(100),
+    BirthYear YEAR
+);
+
+-- 3. Members Table
+CREATE TABLE Members (
+    MemberID INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(100) NOT NULL,
+    LastName VARCHAR(100) NOT NULL,
+    Email VARCHAR(150) UNIQUE NOT NULL,
+    JoinDate DATE DEFAULT CURRENT_DATE
+);
+
+-- 4. Borrowing Table
+CREATE TABLE Borrowing (
+    BorrowID INT PRIMARY KEY AUTO_INCREMENT,
+    BookID INT,
+    MemberID INT,
+    BorrowDate DATE DEFAULT CURRENT_DATE,
+    ReturnDate DATE,
+    FOREIGN KEY (BookID) REFERENCES Books(BookID),
+    FOREIGN KEY (MemberID) REFERENCES Members(MemberID)
+);
+
+-- 5. Authors_Books Table (Many-to-Many Relationship)
+CREATE TABLE Authors_Books (
+    AuthorID INT,
+    BookID INT,
+    PRIMARY KEY (AuthorID, BookID),
+    FOREIGN KEY (AuthorID) REFERENCES Authors(AuthorID),
+    FOREIGN KEY (BookID) REFERENCES Books(BookID)
+);
+
+-- Step 3: Insert Sample Data
+
+-- Insert into Authors Table
+INSERT INTO Authors (FirstName, LastName, Country, BirthYear)
+VALUES 
+    ('George', 'Orwell', 'United Kingdom', 1903),
+    ('Harper', 'Lee', 'United States', 1926),
+    ('Jane', 'Austen', 'United Kingdom', 1775);
+
+-- Insert into Books Table
+INSERT INTO Books (Title, Genre, PublishedYear, ISBN, Quantity)
+VALUES 
+    ('1984', 'Dystopian', 1949, '1234567890123', 5),
+    ('To Kill a Mockingbird', 'Fiction', 1960, '1234567890124', 3),
+    ('Pride and Prejudice', 'Romance', 1813, '1234567890125', 2);
+
+-- Insert into Members Table
+INSERT INTO Members (FirstName, LastName, Email)
+VALUES 
+    ('Alice', 'Johnson', 'alice.johnson@example.com'),
+    ('Bob', 'Smith', 'bob.smith@example.com');
+
+-- Insert into Authors_Books Table (Associating Books with Authors)
+INSERT INTO Authors_Books (AuthorID, BookID)
+VALUES 
+    (1, 1), -- George Orwell wrote '1984'
+    (2, 2), -- Harper Lee wrote 'To Kill a Mockingbird'
+    (3, 3); -- Jane Austen wrote 'Pride and Prejudice'
+
+-- Insert into Borrowing Table
+INSERT INTO Borrowing (BookID, MemberID, BorrowDate, ReturnDate)
+VALUES 
+    (1, 1, '2024-01-15', '2024-01-30'), 
+    (2, 2, '2024-02-10', '2024-02-20'),
+    (3, 1, '2024-03-05', NULL); -- Not yet returned
+
+-- Step 4: Queries for Library Activities
+
+-- a) List all books borrowed by a specific member (Alice Johnson)
+SELECT B.Title, B.Genre, Br.BorrowDate, Br.ReturnDate
+FROM Books B
+JOIN Borrowing Br ON B.BookID = Br.BookID
+JOIN Members M ON M.MemberID = Br.MemberID
+WHERE M.FirstName = 'Alice' AND M.LastName = 'Johnson';
+
+-- b) Check the available copies of a specific book ('1984')
+SELECT Title, Quantity
+FROM Books
+WHERE Title = '1984';
+
+-- c) List all authors and their books
+SELECT A.FirstName, A.LastName, B.Title
+FROM Authors A
+JOIN Authors_Books AB ON A.AuthorID = AB.AuthorID
+JOIN Books B ON AB.BookID = B.BookID;
+
+-- d) Count of books per genre
+SELECT Genre, COUNT(*) AS BookCount
+FROM Books
+GROUP BY Genre;
+
+-- e) Find the borrowing history for each member
+SELECT M.FirstName, M.LastName, B.Title, Br.BorrowDate, Br.ReturnDate
+FROM Members M
+JOIN Borrowing Br ON M.MemberID = Br.MemberID
+JOIN Books B ON Br.BookID = B.BookID
+ORDER BY M.LastName, M.FirstName, Br.BorrowDate;
